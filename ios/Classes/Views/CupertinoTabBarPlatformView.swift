@@ -31,9 +31,15 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
     var rightCount: Int = 1
     var leftInset: CGFloat = 0
     var rightInset: CGFloat = 0
+      
+    
+    var iconBytes: [FlutterStandardTypedData] = []
+    var iconBytesActive: [FlutterStandardTypedData] = []
 
     if let dict = args as? [String: Any] {
       labels = (dict["labels"] as? [String]) ?? []
+      iconBytes = (dict["iconBytes"] as? [FlutterStandardTypedData]) ?? []
+      iconBytesActive = (dict["iconBytesActive"] as? [FlutterStandardTypedData]) ?? []
       symbols = (dict["sfSymbols"] as? [String]) ?? []
       sizes = (dict["sfSymbolSizes"] as? [NSNumber]) ?? []
       colors = (dict["sfSymbolColors"] as? [NSNumber]) ?? []
@@ -52,22 +58,53 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
     super.init()
 
     container.backgroundColor = .clear
-    if #available(iOS 13.0, *) { container.overrideUserInterfaceStyle = isDark ? .dark : .light }
+    // if #available(iOS 13.0, *) { container.overrideUserInterfaceStyle = isDark ? .dark : .light }
+    if #available(iOS 13.0, *) { container.overrideUserInterfaceStyle = .light }
 
     let appearance: UITabBarAppearance? = {
-    if #available(iOS 13.0, *) { let ap = UITabBarAppearance(); ap.configureWithDefaultBackground(); return ap }
-    return nil
-  }()
+      if #available(iOS 13.0, *) { let ap = UITabBarAppearance(); ap.configureWithTransparentBackground(); return ap }
+      return nil
+    }()
+    
     func buildItems(_ range: Range<Int>) -> [UITabBarItem] {
       var items: [UITabBarItem] = []
       for i in range {
         var image: UIImage? = nil
-        if i < symbols.count { image = UIImage(systemName: symbols[i]) }
+        var activeImage: UIImage? = nil
+        if i < symbols.count {
+          let bytes: FlutterStandardTypedData? = iconBytes[i]
+          let activeBytes: FlutterStandardTypedData? = iconBytesActive[i]
+          
+          if let bytes = bytes {
+            image = UIImage.init(data: bytes.data, scale: UIScreen.main.scale)
+            activeImage = image
+            if let activeBytes = activeBytes {
+              activeImage = UIImage.init(data: activeBytes.data, scale: UIScreen.main.scale)
+            }
+          } else {
+            image = UIImage(systemName: symbols[i])
+            activeImage = image
+          }
+          image = image?.resized(to: CGSize(width: Int(truncating: sizes[i]), height: Int(truncating: sizes[i]))) // 自定义尺寸
+          // 关键：设置渲染模式为 .alwaysOriginal，禁用系统着色
+          image = image?.withRenderingMode(.alwaysOriginal)
+          activeImage = activeImage?.resized(to: CGSize(width: Int(truncating: sizes[i]), height: Int(truncating: sizes[i]))) // 自定义尺寸
+          activeImage = activeImage?.withRenderingMode(.alwaysOriginal)
+        }
+        
+        
         let title = (i < labels.count) ? labels[i] : nil
-        items.append(UITabBarItem(title: title, image: image, selectedImage: image))
+        
+        let tabBarItem = UITabBarItem(title: title, image: image, selectedImage: activeImage)
+          
+        // tabBarItem.imageInsets = UIEdgeInsets(top: 8, left: 0, bottom: -8, right: 0)
+        // tabBarItem.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: -2)
+        
+        items.append(tabBarItem)
       }
       return items
     }
+    
     let count = max(labels.count, symbols.count)
     if split && count > rightCount {
       let leftEnd = count - rightCount
@@ -133,14 +170,25 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
       if let bg = bg { bar.barTintColor = bg }
       if #available(iOS 10.0, *), let tint = tint { bar.tintColor = tint }
       if let ap = appearance { if #available(iOS 13.0, *) { bar.standardAppearance = ap; if #available(iOS 15.0, *) { bar.scrollEdgeAppearance = ap } } }
+      if let ap = appearance {
+          if #available(iOS 13.0, *) {
+              // 调整内边距
+              ap.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 3)
+              bar.standardAppearance = ap
+              if #available(iOS 15.0, *) {
+                  bar.scrollEdgeAppearance = ap
+              }
+          }
+      }
       bar.items = buildItems(0..<count)
       if selectedIndex >= 0, let items = bar.items, selectedIndex < items.count { bar.selectedItem = items[selectedIndex] }
       container.addSubview(bar)
+      
       NSLayoutConstraint.activate([
-        bar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-        bar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-        bar.topAnchor.constraint(equalTo: container.topAnchor),
-        bar.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        bar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: -30),
+        bar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: 0),
+        bar.topAnchor.constraint(equalTo: container.topAnchor, constant: 0),
+        bar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
       ])
     }
     // Store split settings for future updates
@@ -167,16 +215,7 @@ channel.setMethodCallHandler { [weak self] call, result in
           let selectedIndex = (args["selectedIndex"] as? NSNumber)?.intValue ?? 0
           self.currentLabels = labels
           self.currentSymbols = symbols
-          func buildItems(_ range: Range<Int>) -> [UITabBarItem] {
-            var items: [UITabBarItem] = []
-            for i in range {
-              var image: UIImage? = nil
-              if i < symbols.count { image = UIImage(systemName: symbols[i]) }
-              let title = (i < labels.count) ? labels[i] : nil
-              items.append(UITabBarItem(title: title, image: image, selectedImage: image))
-            }
-            return items
-          }
+          
           let count = max(labels.count, symbols.count)
           if self.isSplit && count > self.rightCountVal, let left = self.tabBarLeft, let right = self.tabBarRight {
             let leftEnd = count - self.rightCountVal
@@ -215,16 +254,7 @@ channel.setMethodCallHandler { [weak self] call, result in
             if #available(iOS 13.0, *) { let ap = UITabBarAppearance(); ap.configureWithDefaultBackground(); return ap }
             return nil
           }()
-          func buildItems(_ range: Range<Int>) -> [UITabBarItem] {
-            var items: [UITabBarItem] = []
-            for i in range {
-              var image: UIImage? = nil
-              if i < symbols.count { image = UIImage(systemName: symbols[i]) }
-              let title = (i < labels.count) ? labels[i] : nil
-              items.append(UITabBarItem(title: title, image: image, selectedImage: image))
-            }
-            return items
-          }
+  
           let count = max(labels.count, symbols.count)
           if split && count > rightCount {
             let leftEnd = count - rightCount
@@ -273,14 +303,28 @@ channel.setMethodCallHandler { [weak self] call, result in
             self.tabBar = bar
             bar.delegate = self
             bar.translatesAutoresizingMaskIntoConstraints = false
+            if let bg = bg { bar.barTintColor = bg }
+            if #available(iOS 10.0, *), let tint = tint { bar.tintColor = tint }
+            if let ap = appearance { if #available(iOS 13.0, *) { bar.standardAppearance = ap; if #available(iOS 15.0, *) { bar.scrollEdgeAppearance = ap } } }
+            if let ap = appearance {
+                if #available(iOS 13.0, *) {
+                    // 调整内边距
+                    ap.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 3)
+                    bar.standardAppearance = ap
+                    if #available(iOS 15.0, *) {
+                        bar.scrollEdgeAppearance = ap
+                    }
+                }
+            }
             bar.items = buildItems(0..<count)
             if let items = bar.items, selectedIndex >= 0, selectedIndex < items.count { bar.selectedItem = items[selectedIndex] }
             self.container.addSubview(bar)
+            
             NSLayoutConstraint.activate([
-              bar.leadingAnchor.constraint(equalTo: self.container.leadingAnchor),
-              bar.trailingAnchor.constraint(equalTo: self.container.trailingAnchor),
-              bar.topAnchor.constraint(equalTo: self.container.topAnchor),
-              bar.bottomAnchor.constraint(equalTo: self.container.bottomAnchor),
+              bar.leadingAnchor.constraint(equalTo: self.container.leadingAnchor, constant: -30),
+              bar.trailingAnchor.constraint(equalTo: self.container.trailingAnchor, constant: 0),
+              bar.topAnchor.constraint(equalTo: self.container.topAnchor, constant: 0),
+              bar.bottomAnchor.constraint(equalTo: self.container.bottomAnchor, constant: 20),
             ])
           }
           self.isSplit = split; self.rightCountVal = rightCount; self.leftInsetVal = leftInset; self.rightInsetVal = rightInset
@@ -370,4 +414,15 @@ channel.setMethodCallHandler { [weak self] call, result in
     let b = CGFloat(argb & 0xFF) / 255.0
     return UIColor(red: r, green: g, blue: b, alpha: a)
   }
+}
+
+
+extension UIImage {
+    func resized(to size: CGSize) -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
+        draw(in: CGRect(origin: .zero, size: size))
+        let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return resizedImage
+    }
 }

@@ -8,13 +8,19 @@ import '../style/sf_symbol.dart';
 /// Immutable data describing a single tab bar item.
 class CNTabBarItem {
   /// Creates a tab bar item description.
-  const CNTabBarItem({this.label, this.icon});
+  const CNTabBarItem({this.label, this.icon, this.bytes, this.activeBytes});
 
   /// Optional tab item label.
   final String? label;
 
   /// Optional SF Symbol for the item.
   final CNSymbol? icon;
+
+  /// Use bytes
+  final Uint8List? bytes;
+
+  /// Use activeBytes
+  final Uint8List? activeBytes;
 }
 
 /// A Cupertino-native tab bar. Uses native UITabBar/NSTabView style visuals.
@@ -33,6 +39,7 @@ class CNTabBar extends StatefulWidget {
     this.rightCount = 1,
     this.shrinkCentered = true,
     this.splitSpacing = 8.0,
+    this.useBytes = false,
   });
 
   /// Items to display in the tab bar.
@@ -66,6 +73,9 @@ class CNTabBar extends StatefulWidget {
 
   /// Gap between left/right halves when split.
   final double splitSpacing; // gap between left/right halves when split
+
+  /// icon Use bytes
+  final bool useBytes;
 
   @override
   State<CNTabBar> createState() => _CNTabBarState();
@@ -127,6 +137,15 @@ class _CNTabBarState extends State<CNTabBar> {
 
     final labels = widget.items.map((e) => e.label ?? '').toList();
     final symbols = widget.items.map((e) => e.icon?.name ?? '').toList();
+    List<Uint8List> iconBytes = [];
+    List<Uint8List> activeIconBytes = [];
+    if (widget.useBytes) {
+      iconBytes = widget.items.map((e) => e.bytes!).toList();
+      activeIconBytes = widget.items
+          .map((e) => e.activeBytes ?? e.bytes!)
+          .toList();
+    }
+
     final sizes = widget.items
         .map((e) => (widget.iconSize ?? e.icon?.size))
         .toList();
@@ -137,6 +156,8 @@ class _CNTabBarState extends State<CNTabBar> {
     final creationParams = <String, dynamic>{
       'labels': labels,
       'sfSymbols': symbols,
+      'iconBytes': iconBytes,
+      'iconBytesActive': activeIconBytes,
       'sfSymbolSizes': sizes,
       'sfSymbolColors': colors,
       'selectedIndex': widget.currentIndex,
@@ -232,11 +253,22 @@ class _CNTabBarState extends State<CNTabBar> {
     // Items update (for hot reload or dynamic changes)
     final labels = widget.items.map((e) => e.label ?? '').toList();
     final symbols = widget.items.map((e) => e.icon?.name ?? '').toList();
+    List<Uint8List> iconBytes = [];
+    List<Uint8List> activeIconBytes = [];
+    if (widget.useBytes) {
+      iconBytes = widget.items.map((e) => e.bytes!).toList();
+      activeIconBytes = widget.items
+          .map((e) => e.activeBytes ?? e.bytes!)
+          .toList();
+    }
+
     if (_lastLabels?.join('|') != labels.join('|') ||
         _lastSymbols?.join('|') != symbols.join('|')) {
       await ch.invokeMethod('setItems', {
         'labels': labels,
         'sfSymbols': symbols,
+        'iconBytes': iconBytes,
+        'iconBytesActive': activeIconBytes,
         'selectedIndex': widget.currentIndex,
       });
       _lastLabels = labels;
