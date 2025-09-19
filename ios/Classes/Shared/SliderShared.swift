@@ -1,5 +1,6 @@
 import SwiftUI
 
+@available(iOS 14.0, *)
 struct CupertinoSliderView: View {
   @ObservedObject var model: SliderModel
 

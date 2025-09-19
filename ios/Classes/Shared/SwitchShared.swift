@@ -1,5 +1,6 @@
 import SwiftUI
 
+@available(iOS 14.0, *)
 struct CupertinoSwitchView: View {
   @ObservedObject var model: SwitchModel
 

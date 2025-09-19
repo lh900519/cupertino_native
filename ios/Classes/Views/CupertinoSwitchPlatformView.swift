@@ -2,6 +2,7 @@ import Flutter
 import UIKit
 import SwiftUI
 
+@available(iOS 14.0, *)
 class CupertinoSwitchPlatformView: NSObject, FlutterPlatformView {
   private let channel: FlutterMethodChannel
   private let hostingController: UIHostingController<CupertinoSwitchView>

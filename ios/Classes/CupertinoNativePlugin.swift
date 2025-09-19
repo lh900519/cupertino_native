@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 
+@available(iOS 14.0, *)
 public class CupertinoNativePlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "cupertino_native", binaryMessenger: registrar.messenger())
