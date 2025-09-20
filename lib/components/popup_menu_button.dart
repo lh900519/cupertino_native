@@ -111,6 +111,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
   int? _lastTint;
   String? _lastTitle;
   String? _lastIconName;
+  Uint8List? _lastIconBytes;
   double? _lastIconSize;
   int? _lastIconColor;
   double? _intrinsicWidth;
@@ -196,32 +197,35 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     // Flatten entries into parallel arrays for the platform view.
     final labels = <String>[];
     final symbols = <String>[];
+    final iconBytes = <Uint8List?>[];
     final isDivider = <bool>[];
     final enabled = <bool>[];
-    final sizes = <double?>[];
-    final colors = <int?>[];
-    final modes = <String?>[];
+    final sizes = <double>[];
+    final colors = <int>[];
+    final modes = <String>[];
     final palettes = <List<int?>?>[];
     final gradients = <bool?>[];
     for (final e in widget.items) {
       if (e is CNPopupMenuDivider) {
         labels.add('');
         symbols.add('');
+        iconBytes.add(null);
         isDivider.add(true);
         enabled.add(false);
-        sizes.add(null);
-        colors.add(null);
-        modes.add(null);
+        sizes.add(0);
+        colors.add(0);
+        modes.add('');
         palettes.add(null);
         gradients.add(null);
       } else if (e is CNPopupMenuItem) {
         labels.add(e.label);
         symbols.add(e.icon?.name ?? '');
+        iconBytes.add(e.icon?.bytes);
         isDivider.add(false);
         enabled.add(e.enabled);
-        sizes.add(e.icon?.size);
-        colors.add(resolveColorToArgb(e.icon?.color, context));
-        modes.add(e.icon?.mode?.name);
+        sizes.add(e.icon?.size ?? 0);
+        colors.add(resolveColorToArgb(e.icon?.color, context) ?? 0);
+        modes.add(e.icon?.mode?.name ?? '');
         palettes.add(
           e.icon?.paletteColors
               ?.map((c) => resolveColorToArgb(c, context))
@@ -234,6 +238,8 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     final creationParams = <String, dynamic>{
       if (widget.buttonLabel != null) 'buttonTitle': widget.buttonLabel,
       if (widget.buttonIcon != null) 'buttonIconName': widget.buttonIcon!.name,
+      if (widget.buttonIcon?.bytes != null)
+        'buttonIconBytes': widget.buttonIcon!.bytes,
       if (widget.buttonIcon?.size != null)
         'buttonIconSize': widget.buttonIcon!.size,
       if (widget.buttonIcon?.color != null)
@@ -245,6 +251,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
       'buttonStyle': widget.buttonStyle.name,
       'labels': labels,
       'sfSymbols': symbols,
+      'iconBytes': iconBytes,
       'isDivider': isDivider,
       'enabled': enabled,
       'sfSymbolSizes': sizes,
@@ -336,6 +343,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     _lastIsDark = _isDark;
     _lastTitle = widget.buttonLabel;
     _lastIconName = widget.buttonIcon?.name;
+    _lastIconBytes = widget.buttonIcon?.bytes;
     _lastIconSize = widget.buttonIcon?.size;
     _lastIconColor = resolveColorToArgb(widget.buttonIcon?.color, context);
     _lastStyle = widget.buttonStyle;
@@ -371,32 +379,35 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     // Prepare popup items upfront to avoid using BuildContext after awaits.
     final updLabels = <String>[];
     final updSymbols = <String>[];
+    final updIconBytes = <Uint8List?>[];
     final updIsDivider = <bool>[];
     final updEnabled = <bool>[];
-    final updSizes = <double?>[];
-    final updColors = <int?>[];
-    final updModes = <String?>[];
+    final updSizes = <double>[];
+    final updColors = <int>[];
+    final updModes = <String>[];
     final updPalettes = <List<int?>?>[];
     final updGradients = <bool?>[];
     for (final e in widget.items) {
       if (e is CNPopupMenuDivider) {
         updLabels.add('');
         updSymbols.add('');
+        updIconBytes.add(null);
         updIsDivider.add(true);
         updEnabled.add(false);
-        updSizes.add(null);
-        updColors.add(null);
-        updModes.add(null);
+        updSizes.add(0);
+        updColors.add(0);
+        updModes.add('');
         updPalettes.add(null);
         updGradients.add(null);
       } else if (e is CNPopupMenuItem) {
         updLabels.add(e.label);
         updSymbols.add(e.icon?.name ?? '');
+        updIconBytes.add(e.icon?.bytes);
         updIsDivider.add(false);
         updEnabled.add(e.enabled);
-        updSizes.add(e.icon?.size);
-        updColors.add(resolveColorToArgb(e.icon?.color, context));
-        updModes.add(e.icon?.mode?.name);
+        updSizes.add(e.icon?.size ?? 0);
+        updColors.add(resolveColorToArgb(e.icon?.color, context) ?? 0);
+        updModes.add(e.icon?.mode?.name ?? '');
         updPalettes.add(
           e.icon?.paletteColors
               ?.map((c) => resolveColorToArgb(c, context))
@@ -408,6 +419,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     // Capture context-dependent values before any awaits
     final tint = resolveColorToArgb(_effectiveTint, context);
     final preIconName = widget.buttonIcon?.name;
+    final preIconBytes = widget.buttonIcon?.bytes;
     final preIconSize = widget.buttonIcon?.size;
     final preIconColor = resolveColorToArgb(widget.buttonIcon?.color, context);
     if (_lastTint != tint && tint != null) {
@@ -428,9 +440,15 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
 
     if (widget.isIconButton) {
       final iconName = preIconName;
+      final iconBytes = preIconBytes;
       final iconSize = preIconSize;
       final iconColor = preIconColor;
       final updates = <String, dynamic>{};
+
+      if (_lastIconBytes != iconBytes && iconBytes != null) {
+        updates['buttonIconBytes'] = iconBytes;
+        _lastIconBytes = iconBytes;
+      }
       if (_lastIconName != iconName && iconName != null) {
         updates['buttonIconName'] = iconName;
         _lastIconName = iconName;
@@ -462,6 +480,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     await ch.invokeMethod('setItems', {
       'labels': updLabels,
       'sfSymbols': updSymbols,
+      'iconBytes': updIconBytes,
       'isDivider': updIsDivider,
       'enabled': updEnabled,
       'sfSymbolSizes': updSizes,

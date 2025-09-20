@@ -141,6 +141,7 @@ class _CNButtonState extends State<CNButton> {
     final creationParams = <String, dynamic>{
       if (widget.label != null) 'buttonTitle': widget.label,
       if (widget.icon != null) 'buttonIconName': widget.icon!.name,
+      if (widget.icon?.bytes != null) 'buttonIconBytes': widget.icon!.bytes,
       if (widget.icon?.size != null) 'buttonIconSize': widget.icon!.size,
       if (widget.icon?.color != null)
         'buttonIconColor': resolveColorToArgb(widget.icon!.color, context),

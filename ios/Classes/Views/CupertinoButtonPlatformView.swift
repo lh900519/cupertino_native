@@ -15,6 +15,9 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
 
     var title: String? = nil
     var iconName: String? = nil
+    
+    var iconBytes: FlutterStandardTypedData? = nil
+    
     var iconSize: CGFloat? = nil
     var iconColor: UIColor? = nil
     var makeRound: Bool = false
@@ -28,6 +31,7 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
     if let dict = args as? [String: Any] {
       if let t = dict["buttonTitle"] as? String { title = t }
       if let s = dict["buttonIconName"] as? String { iconName = s }
+      if let i = dict["buttonIconBytes"] as? FlutterStandardTypedData { iconBytes = i }
       if let s = dict["buttonIconSize"] as? NSNumber { iconSize = CGFloat(truncating: s) }
       if let c = dict["buttonIconColor"] as? NSNumber { iconColor = Self.colorFromARGB(c.intValue) }
       if let r = dict["round"] as? NSNumber { makeRound = r.boolValue }
@@ -62,7 +66,15 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
     isEnabled = enabled
 
     var finalImage: UIImage? = nil
-    if let name = iconName, var image = UIImage(systemName: name) {
+    var image: UIImage? = nil
+    
+    if let bytes = iconBytes {
+      image = UIImage(data: bytes.data, scale: UIScreen.main.scale)
+    } else if let name = iconName {
+      image = UIImage(systemName: name)
+    }
+    
+    if var image = image {
       if let sz = iconSize { image = image.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: sz)) ?? image }
       if let mode = iconMode {
         switch mode {
@@ -138,12 +150,16 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
       case "setButtonIcon":
         if let args = call.arguments as? [String: Any] {
           var image: UIImage? = nil
-          if let name = args["buttonIconName"] as? String { image = UIImage(systemName: name) }
+          if let bytes = args["buttonIconBytes"] as? FlutterStandardTypedData { image = UIImage(data: bytes.data, scale: UIScreen.main.scale) }
+          
+          if let name = args["buttonIconName"] as? String, image != nil { image = UIImage(systemName: name) }
+
           if let s = args["buttonIconSize"] as? NSNumber, let img = image {
             image = img.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: CGFloat(truncating: s))) ?? img
           }
+          
           if let mode = args["buttonIconRenderingMode"] as? String, let img0 = image {
-            var img = img0
+            let img = img0
             switch mode {
             case "hierarchical":
               if #available(iOS 15.0, *), let c = args["buttonIconColor"] as? NSNumber {
