@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/cupertino.dart';
 
 /// Rendering modes for SF Symbols.
@@ -31,6 +33,12 @@ class CNSymbol {
   /// Whether to enable the built-in gradient when available.
   final bool? gradient; // prefer built-in gradient when available
 
+  /// Use bytes
+  final Uint8List? bytes;
+
+  /// Use bytes
+  final Uint8List? activeBytes;
+
   /// Creates a symbol description for native rendering.
   const CNSymbol(
     this.name, {
@@ -39,5 +47,19 @@ class CNSymbol {
     this.paletteColors,
     this.mode,
     this.gradient,
+    this.bytes,
+    this.activeBytes,
+  });
+
+  /// Creates a symbol description for native rendering.
+  const CNSymbol.bytes(
+    this.bytes, {
+    this.name = '',
+    this.size = 24.0,
+    this.color,
+    this.paletteColors,
+    this.mode,
+    this.gradient,
+    this.activeBytes,
   });
 }
