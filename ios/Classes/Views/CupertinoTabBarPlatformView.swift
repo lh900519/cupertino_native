@@ -186,7 +186,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
       
       NSLayoutConstraint.activate([
         bar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: -30),
-        bar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: 0),
+        bar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: 20),
         bar.topAnchor.constraint(equalTo: container.topAnchor, constant: 0),
         bar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
       ])
@@ -322,7 +322,7 @@ channel.setMethodCallHandler { [weak self] call, result in
             
             NSLayoutConstraint.activate([
               bar.leadingAnchor.constraint(equalTo: self.container.leadingAnchor, constant: -30),
-              bar.trailingAnchor.constraint(equalTo: self.container.trailingAnchor, constant: 0),
+              bar.trailingAnchor.constraint(equalTo: self.container.trailingAnchor, constant: 20),
               bar.topAnchor.constraint(equalTo: self.container.topAnchor, constant: 0),
               bar.bottomAnchor.constraint(equalTo: self.container.bottomAnchor, constant: 20),
             ])
