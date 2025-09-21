@@ -253,7 +253,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
     // MARK: - Constraints
     private func applySingleTabBarConstraints(to bar: UITabBar) {
         NSLayoutConstraint.activate([
-            bar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: -30),
+            bar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: -20),
             bar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: 20),
             bar.topAnchor.constraint(equalTo: container.topAnchor),
             bar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20)
@@ -272,7 +272,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
 
             NSLayoutConstraint.activate([
                 // Left bar
-                leftBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: config.leftInset-30),
+                leftBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: config.leftInset - 20),
                 leftBar.trailingAnchor.constraint(equalTo: rightBar.leadingAnchor, constant: -spacing),
                 leftBar.topAnchor.constraint(equalTo: container.topAnchor),
                 leftBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
@@ -293,7 +293,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
                 rightBar.widthAnchor.constraint(equalToConstant: rightWidth),
 
                 // Left bar
-                leftBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: config.leftInset - 30),
+                leftBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: config.leftInset - 20),
                 leftBar.topAnchor.constraint(equalTo: container.topAnchor),
                 leftBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
                 leftBar.widthAnchor.constraint(equalToConstant: leftWidth),
