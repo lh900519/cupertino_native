@@ -187,7 +187,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         if #available(iOS 13.0, *) {
             let appearance = UITabBarAppearance()
             appearance.configureWithTransparentBackground()
-            appearance.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 3)
+            appearance.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 0)
 
             bar.standardAppearance = appearance
             if #available(iOS 15.0, *) {
