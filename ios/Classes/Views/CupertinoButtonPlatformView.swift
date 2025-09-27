@@ -149,16 +149,26 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing title", details: nil)) }
       case "setButtonIcon":
         if let args = call.arguments as? [String: Any] {
-          var image: UIImage? = nil
-          if let bytes = args["buttonIconBytes"] as? FlutterStandardTypedData { image = UIImage(data: bytes.data, scale: UIScreen.main.scale) }
           
-          if let name = args["buttonIconName"] as? String, image != nil { image = UIImage(systemName: name) }
+          if let i = args["buttonIconBytes"] as? FlutterStandardTypedData { iconBytes = i }
+          if let s = args["buttonIconSize"] as? NSNumber { iconSize = CGFloat(truncating: s) }
+          if let c = args["buttonIconColor"] as? NSNumber { iconColor = Self.colorFromARGB(c.intValue) }
+          if let s = args["buttonIconName"] as? String { iconName = s }
+          if let m = args["buttonIconRenderingMode"] as? String { iconMode = m }
+          
+          var image: UIImage? = nil
+          if let bytes = iconBytes {
+            image = UIImage(data: bytes.data, scale: UIScreen.main.scale)
+          } else if let name = iconName, !name.isEmpty {
+            image = UIImage(systemName: name)
+          }
 
-          if let s = args["buttonIconSize"] as? NSNumber, let img = image {
-            image = img.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: CGFloat(truncating: s))) ?? img
+          if let s = iconSize, let img = image {
+            image = img.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: s)) ?? img
           }
           
-          if let mode = args["buttonIconRenderingMode"] as? String, let img0 = image {
+          
+          if let mode = iconMode, let img0 = image {
             let img = img0
             switch mode {
             case "hierarchical":
@@ -184,8 +194,8 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
             default:
               break
             }
-          } else if let c = args["buttonIconColor"] as? NSNumber, let img = image, #available(iOS 13.0, *) {
-            image = img.withTintColor(Self.colorFromARGB(c.intValue), renderingMode: .alwaysOriginal)
+          } else if let c = iconColor, let img = image, #available(iOS 13.0, *) {
+            image = img.withTintColor(c, renderingMode: .alwaysOriginal)
           }
           self.setButtonContent(title: nil, image: image, iconOnly: true)
           result(nil)
