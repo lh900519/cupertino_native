@@ -82,6 +82,7 @@ class _CNButtonState extends State<CNButton> {
   int? _lastTint;
   String? _lastTitle;
   String? _lastIconName;
+  Uint8List? _lastIconBytes;
   double? _lastIconSize;
   int? _lastIconColor;
   double? _intrinsicWidth;
@@ -231,6 +232,7 @@ class _CNButtonState extends State<CNButton> {
     _lastIsDark = _isDark;
     _lastTitle = widget.label;
     _lastIconName = widget.icon?.name;
+    _lastIconBytes = widget.icon?.bytes;
     _lastIconSize = widget.icon?.size;
     _lastIconColor = resolveColorToArgb(widget.icon?.color, context);
     _lastStyle = widget.style;
@@ -267,6 +269,7 @@ class _CNButtonState extends State<CNButton> {
     if (ch == null) return;
     final tint = resolveColorToArgb(_effectiveTint, context);
     final preIconName = widget.icon?.name;
+    final preIconBytes = widget.icon?.bytes;
     final preIconSize = widget.icon?.size;
     final preIconColor = resolveColorToArgb(widget.icon?.color, context);
 
@@ -290,9 +293,15 @@ class _CNButtonState extends State<CNButton> {
 
     if (widget.isIcon) {
       final iconName = preIconName;
+      final iconBytes = preIconBytes;
       final iconSize = preIconSize;
       final iconColor = preIconColor;
       final updates = <String, dynamic>{};
+
+      if (_lastIconBytes != iconBytes && iconBytes != null) {
+        updates['buttonIconBytes'] = iconBytes;
+        _lastIconBytes = iconBytes;
+      }
       if (_lastIconName != iconName && iconName != null) {
         updates['buttonIconName'] = iconName;
         _lastIconName = iconName;
