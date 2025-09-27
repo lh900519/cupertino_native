@@ -22,9 +22,9 @@ class CNButton extends StatefulWidget {
     this.height = 32.0,
     this.shrinkWrap = false,
     this.style = CNButtonStyle.plain,
+    this.round = false,
   }) : icon = null,
-       width = null,
-       round = false;
+       width = null;
 
   /// Creates a round, icon-only variant of [CNButton].
   const CNButton.icon({
@@ -35,8 +35,8 @@ class CNButton extends StatefulWidget {
     this.tint,
     double size = 44.0,
     this.style = CNButtonStyle.glass,
+    this.round = true,
   }) : label = null,
-       round = true,
        width = size,
        height = size,
        shrinkWrap = false,
@@ -154,7 +154,8 @@ class _CNButtonState extends State<CNButton> {
             .toList(),
       if (widget.icon?.gradient != null)
         'buttonIconGradientEnabled': widget.icon!.gradient,
-      if (widget.isIcon) 'round': true,
+      // if (widget.isIcon) 'round': true,
+      'round': widget.round,
       'buttonStyle': widget.style.name,
       'enabled': (widget.enabled && widget.onPressed != null),
       'isDark': _isDark,
