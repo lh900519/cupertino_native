@@ -31,6 +31,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         let symbols: [String]
         let iconBytes: [FlutterStandardTypedData]
         let iconBytesActive: [FlutterStandardTypedData]
+        let iconColors: [NSNumber]
         let sizes: [NSNumber]
         let selectedIndex: Int
         let isDark: Bool
@@ -86,6 +87,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         let symbols = (dict["sfSymbols"] as? [String]) ?? []
         let iconBytes = (dict["iconBytes"] as? [FlutterStandardTypedData]) ?? []
         let iconBytesActive = (dict["iconBytesActive"] as? [FlutterStandardTypedData]) ?? []
+        let iconColors = (dict["sfSymbolColors"] as? [NSNumber]) ?? []
         let sizes = (dict["sfSymbolSizes"] as? [NSNumber]) ?? []
         let selectedIndex = (dict["selectedIndex"] as? NSNumber)?.intValue ?? 0
         let isDark = (dict["isDark"] as? NSNumber)?.boolValue ?? false
@@ -107,6 +109,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             symbols: symbols,
             iconBytes: iconBytes,
             iconBytesActive: iconBytesActive,
+            iconColors: iconColors,
             sizes: sizes,
             selectedIndex: selectedIndex,
             isDark: isDark,
@@ -220,6 +223,12 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             // Try to load custom image first
             if index < config.iconBytes.count {
                 image = UIImage(data: config.iconBytes[index].data, scale: UIScreen.main.scale)
+                if index < config.iconColors.count {
+                  let c = Self.colorFromARGB(config.iconColors[index].intValue)
+                  if let img = image, #available(iOS 13.0, *)  {
+                    image = img.withTintColor(c, renderingMode: .alwaysOriginal)
+                  }
+                }
                 selectedImage = image
 
                 if index < config.iconBytesActive.count {
@@ -376,6 +385,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             symbols: symbols,
             iconBytes: (args["iconBytes"] as? [FlutterStandardTypedData]) ?? [],
             iconBytesActive: (args["iconBytesActive"] as? [FlutterStandardTypedData]) ?? [],
+            iconColors: (args["sfSymbolSizes"] as? [NSNumber]) ?? [],
             sizes: (args["sfSymbolSizes"] as? [NSNumber]) ?? [],
             selectedIndex: selectedIndex,
             isDark: isDarkMode,
@@ -441,6 +451,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             symbols: currentSymbols,
             iconBytes: [],
             iconBytesActive: [],
+            iconColors: [],
             sizes: [],
             selectedIndex: selectedIndex,
             isDark: isDarkMode,
