@@ -225,6 +225,11 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
                 if index < config.iconBytesActive.count {
                     selectedImage = UIImage(data: config.iconBytesActive[index].data, scale: UIScreen.main.scale)
                 }
+              
+                if let col = config.style?.tintColor, #available(iOS 13.0, *) {
+                  selectedImage = selectedImage?.withTintColor(col, renderingMode: .alwaysOriginal)
+                }
+              
             } else {
                 // Use SF Symbol
                 image = UIImage(systemName: symbol)
