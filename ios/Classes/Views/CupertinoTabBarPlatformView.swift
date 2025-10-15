@@ -50,7 +50,6 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
 
         super.init()
 
-        setupContainer()
         configureFromArguments(args)
         setupMethodChannelHandler()
     }
@@ -59,7 +58,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
     private func setupContainer() {
         container.backgroundColor = .clear
         if #available(iOS 13.0, *) {
-            container.overrideUserInterfaceStyle = .light
+          container.overrideUserInterfaceStyle = self.isDarkMode ? .dark : .light
         }
     }
 
@@ -78,6 +77,8 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         self.rightInsetVal = config.rightInset
         self.currentStyle = config.style
         self.isDarkMode = config.isDark
+      
+        setupContainer()
 
         setupTabBars(with: config)
     }
