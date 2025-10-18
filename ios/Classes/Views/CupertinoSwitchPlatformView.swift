@@ -15,6 +15,8 @@ class CupertinoSwitchPlatformView: NSObject, FlutterPlatformView {
     var enabled: Bool = true
     var isDark: Bool = false
     var initialTint: UIColor? = nil
+    var scale: CGFloat = 1
+    
     if let dict = args as? [String: Any] {
       if let v = dict["value"] as? NSNumber { initialValue = v.boolValue }
       if let v = dict["enabled"] as? NSNumber { enabled = v.boolValue }
@@ -22,17 +24,18 @@ class CupertinoSwitchPlatformView: NSObject, FlutterPlatformView {
       if let style = dict["style"] as? [String: Any], let tintNum = style["tint"] as? NSNumber {
         initialTint = Self.colorFromARGB(tintNum.intValue)
       }
+      
+      if let v = dict["scale"] as? NSNumber {  scale = CGFloat(truncating: v)  }
     }
 
-    let model = SwitchModel(value: initialValue, enabled: enabled) { newValue in
+    let model = SwitchModel(value: initialValue, enabled: enabled, scale: CGSize(width: scale, height: scale)) { newValue in
       channel.invokeMethod("valueChanged", arguments: ["value": newValue])
     }
     self.hostingController = UIHostingController(rootView: CupertinoSwitchView(model: model))
     self.hostingController.view.backgroundColor = .clear
     self.hostingController.view.isOpaque = false
-    if #available(iOS 13.0, *) {
-      self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
-    }
+    self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+    
     super.init()
 
     if let tint = initialTint {
@@ -61,9 +64,7 @@ class CupertinoSwitchPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing style", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
-          if #available(iOS 13.0, *) {
-            self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
-          }
+          self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
       default:

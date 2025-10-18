@@ -133,15 +133,22 @@ class _CNSwitchState extends State<CNSwitch> {
     // assertions in such cases.
     double estimatedWidthFor(double height) {
       // Approximate iOS UISwitch size is 51x31pt => ~1.645 aspect ratio.
-      const ratio = 51.0 / 31.0;
+      // const ratio = 51.0 / 31.0;
+      const ratio = 64.0 / 26.0;
       return height * ratio;
     }
 
     final double width = estimatedWidthFor(widget.height);
+    double scale = 1;
+    if (widget.height < 26) {
+      scale = (widget.height - 2) / 26;
+    }
+
     final creationParams = <String, dynamic>{
       'value': widget.value,
       'enabled': widget.enabled,
       'isDark': _isDark,
+      'scale': scale,
       'style': encodeStyle(context, tint: _effectiveColor),
     };
 
