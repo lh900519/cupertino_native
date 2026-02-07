@@ -17,8 +17,8 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
     var iconName: String? = nil
     
     var iconBytes: FlutterStandardTypedData? = nil
-    
-    var iconSize: CGFloat? = nil
+
+    var iconSize: NSNumber? = nil
     var iconColor: UIColor? = nil
     var makeRound: Bool = false
     var isDark: Bool = false
@@ -32,7 +32,7 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
       if let t = dict["buttonTitle"] as? String { title = t }
       if let s = dict["buttonIconName"] as? String { iconName = s }
       if let i = dict["buttonIconBytes"] as? FlutterStandardTypedData { iconBytes = i }
-      if let s = dict["buttonIconSize"] as? NSNumber { iconSize = CGFloat(truncating: s) }
+      if let s = dict["buttonIconSize"] as? NSNumber { iconSize = s }
       if let c = dict["buttonIconColor"] as? NSNumber { iconColor = Self.colorFromARGB(c.intValue) }
       if let r = dict["round"] as? NSNumber { makeRound = r.boolValue }
       if let v = dict["isDark"] as? NSNumber { isDark = v.boolValue }
@@ -67,15 +67,19 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
 
     var finalImage: UIImage? = nil
     var image: UIImage? = nil
-    
+
     if let bytes = iconBytes {
       image = UIImage(data: bytes.data, scale: UIScreen.main.scale)
     } else if let name = iconName {
       image = UIImage(systemName: name)
     }
-    
+
     if var image = image {
-      if let sz = iconSize { image = image.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: sz)) ?? image }
+      if let sz = iconSize {
+          // image = image.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: sz)) ?? image
+          image = image.resized(to: CGSize(width: Int(truncating: sz), height: Int(truncating: sz))) ?? image
+      }
+
       if let mode = iconMode {
         switch mode {
         case "hierarchical":
@@ -149,13 +153,13 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing title", details: nil)) }
       case "setButtonIcon":
         if let args = call.arguments as? [String: Any] {
-          
+
           if let i = args["buttonIconBytes"] as? FlutterStandardTypedData { iconBytes = i }
-          if let s = args["buttonIconSize"] as? NSNumber { iconSize = CGFloat(truncating: s) }
+          if let s = args["buttonIconSize"] as? NSNumber { iconSize = s }
           if let c = args["buttonIconColor"] as? NSNumber { iconColor = Self.colorFromARGB(c.intValue) }
           if let s = args["buttonIconName"] as? String { iconName = s }
           if let m = args["buttonIconRenderingMode"] as? String { iconMode = m }
-          
+
           var image: UIImage? = nil
           if let bytes = iconBytes {
             image = UIImage(data: bytes.data, scale: UIScreen.main.scale)
@@ -163,11 +167,11 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
             image = UIImage(systemName: name)
           }
 
-          if let s = iconSize, let img = image {
-            image = img.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: s)) ?? img
+          if let sz = iconSize, let img = image {
+            // image = img.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: CGFloat(truncating: s))) ?? img
+            image = img.resized(to: CGSize(width: Int(truncating: sz), height: Int(truncating: sz))) ?? img
           }
-          
-          
+
           if let mode = iconMode, let img0 = image {
             let img = img0
             switch mode {

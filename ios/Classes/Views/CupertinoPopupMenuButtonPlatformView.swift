@@ -32,9 +32,9 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
 
     var title: String? = nil
     var iconName: String? = nil
-    
+
     var buttonIconBytes: FlutterStandardTypedData? = nil
-    
+
     var iconSize: CGFloat? = nil
     var iconColor: UIColor? = nil
     var makeRound: Bool = false
@@ -244,7 +244,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
         if isDiv { flushGroup(); continue }
         let title = i < labels.count ? labels[i] : ""
         var image: UIImage? = nil
-        
+
         if i < symbols.count {
           if i < iconBytes.count {
               image = UIImage(data: iconBytes[i]!.data, scale: UIScreen.main.scale)
@@ -370,20 +370,22 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
   @available(iOS 13.0, *)
   private func makeButtonIconImage() -> UIImage? {
     var image: UIImage? = nil
-    
+
     if let bytes = btnIconBytes {
       image = UIImage(data: bytes.data, scale: UIScreen.main.scale)
     } else if let name = btnIconName {
       image = UIImage(systemName: name)
     }
-    
+
     guard var image = image else { return nil }
     // guard let name = btnIconName, var image = UIImage(systemName: name) else { return nil }
-    
-    
+
+
     if let sz = btnIconSize {
-      image = image.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: sz)) ?? image
+      // image = image.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: sz)) ?? image
+      image = image.resized(to: CGSize(width: sz, height: sz)) ?? image
     }
+
     if let mode = btnIconMode {
       switch mode {
       case "hierarchical":
