@@ -16,15 +16,18 @@ class CNButton extends StatefulWidget {
   const CNButton({
     super.key,
     required this.label,
+    this.fontSize,
+    this.spacing,
     this.onPressed,
     this.enabled = true,
     this.tint,
     this.height = 32.0,
+    this.width,
+    this.icon,
     this.shrinkWrap = false,
     this.style = CNButtonStyle.plain,
     this.round = false,
-  }) : icon = null,
-       width = null;
+  });
 
   /// Creates a round, icon-only variant of [CNButton].
   const CNButton.icon({
@@ -37,13 +40,22 @@ class CNButton extends StatefulWidget {
     this.style = CNButtonStyle.glass,
     this.round = true,
   }) : label = null,
+       fontSize = null,
+       spacing = null,
        width = size,
        height = size,
        shrinkWrap = false,
        super();
 
-  /// Button text (null in icon mode).
-  final String? label; // null in icon mode
+  /// Button text
+  final String? label;
+
+  /// Button text font size
+  final double? fontSize;
+
+  /// text and icon spacing
+  final double? spacing;
+
   /// Button icon (non-null in icon mode).
   final CNSymbol? icon; // non-null in icon mode
   /// Callback when pressed.
@@ -81,6 +93,8 @@ class _CNButtonState extends State<CNButton> {
   bool? _lastIsDark;
   int? _lastTint;
   String? _lastTitle;
+  double? _lastFontSize;
+  double? _lastSpacing;
   String? _lastIconName;
   Uint8List? _lastIconBytes;
   double? _lastIconSize;
@@ -141,6 +155,8 @@ class _CNButtonState extends State<CNButton> {
 
     final creationParams = <String, dynamic>{
       if (widget.label != null) 'buttonTitle': widget.label,
+      if (widget.fontSize != null) 'buttonFontSize': widget.fontSize,
+      if (widget.spacing != null) 'buttonSpacing': widget.spacing,
       if (widget.icon != null) 'buttonIconName': widget.icon!.name,
       if (widget.icon?.bytes != null) 'buttonIconBytes': widget.icon!.bytes,
       if (widget.icon?.size != null) 'buttonIconSize': widget.icon!.size,
@@ -232,6 +248,8 @@ class _CNButtonState extends State<CNButton> {
     _lastTint = resolveColorToArgb(_effectiveTint, context);
     _lastIsDark = _isDark;
     _lastTitle = widget.label;
+    _lastFontSize = widget.fontSize;
+    _lastSpacing = widget.spacing;
     _lastIconName = widget.icon?.name;
     _lastIconBytes = widget.icon?.bytes;
     _lastIconSize = widget.icon?.size;
@@ -286,9 +304,14 @@ class _CNButtonState extends State<CNButton> {
     await ch.invokeMethod('setEnabled', {
       'enabled': (widget.enabled && widget.onPressed != null),
     });
-    if (_lastTitle != widget.label && widget.label != null) {
-      await ch.invokeMethod('setButtonTitle', {'title': widget.label});
+    if ((_lastTitle != widget.label && widget.label != null) ||
+        _lastFontSize != widget.fontSize) {
+      await ch.invokeMethod('setButtonTitle', {
+        'buttonTitle': widget.label,
+        'buttonFontSize': widget.fontSize,
+      });
       _lastTitle = widget.label;
+      _lastFontSize = widget.fontSize;
       _requestIntrinsicSize();
     }
 
@@ -299,6 +322,10 @@ class _CNButtonState extends State<CNButton> {
       final iconColor = preIconColor;
       final updates = <String, dynamic>{};
 
+      if (_lastSpacing != widget.spacing) {
+        updates['buttonSpacing'] = widget.spacing;
+        _lastSpacing = widget.spacing;
+      }
       if (_lastIconBytes != iconBytes && iconBytes != null) {
         updates['buttonIconBytes'] = iconBytes;
         _lastIconBytes = iconBytes;
