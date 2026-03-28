@@ -9,26 +9,26 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
   private var currentButtonStyle: String = "automatic"
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
-    self.channel = FlutterMethodChannel(name: "CupertinoNativeButton_\(viewId)", binaryMessenger: messenger)
-    self.container = UIView(frame: frame)
-    self.button = UIButton(type: .system)
+    channel = FlutterMethodChannel(name: "CupertinoNativeButton_\(viewId)", binaryMessenger: messenger)
+    container = UIView(frame: frame)
+    button = UIButton(type: .system)
 
-    var title: String? = nil
-    var fontSize: NSNumber? = nil
-    
-    var spacing: NSNumber? = nil
-    
-    var iconName: String? = nil
-    var iconBytes: FlutterStandardTypedData? = nil
+    var title: String?
+    var fontSize: NSNumber?
 
-    var iconSize: NSNumber? = nil
-    var iconColor: UIColor? = nil
+    var spacing: NSNumber?
+
+    var iconName: String?
+    var iconBytes: FlutterStandardTypedData?
+
+    var iconSize: NSNumber?
+    var iconColor: UIColor?
     var makeRound: Bool = false
     var isDark: Bool = false
-    var tint: UIColor? = nil
+    var tint: UIColor?
     var buttonStyle: String = "automatic"
     var enabled: Bool = true
-    var iconMode: String? = nil
+    var iconMode: String?
     var iconPalette: [NSNumber] = []
 
     if let dict = args as? [String: Any] {
@@ -70,8 +70,8 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
     button.isEnabled = enabled
     isEnabled = enabled
 
-    var finalImage: UIImage? = nil
-    var image: UIImage? = nil
+    var finalImage: UIImage?
+    var image: UIImage?
 
     if let bytes = iconBytes {
       image = UIImage(data: bytes.data, scale: UIScreen.main.scale)
@@ -81,8 +81,8 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
 
     if var image = image {
       if let sz = iconSize {
-          // image = image.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: sz)) ?? image
-          image = image.resized(to: CGSize(width: Int(truncating: sz), height: Int(truncating: sz))) ?? image
+        // image = image.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: sz)) ?? image
+        image = image.resized(to: CGSize(width: Int(truncating: sz), height: Int(truncating: sz))) ?? image
       }
 
       if let mode = iconMode {
@@ -115,8 +115,8 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
       }
       finalImage = image
     }
-    
-    setButtonContent(title: title, image: finalImage, iconOnly: (title == nil), fontSize: fontSize, spacing: spacing)
+
+    setButtonContent(title: title, image: finalImage, iconOnly: title == nil, fontSize: fontSize, spacing: spacing)
 
     // Default system highlight/pressed behavior
     button.addTarget(self, action: #selector(onPressed(_:)), for: .touchUpInside)
@@ -154,9 +154,8 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing pressed", details: nil)) }
       case "setButtonTitle", "setButtonIcon":
         if let args = call.arguments as? [String: Any] {
-          
           if let t = args["buttonTitle"] as? String { title = t }
-          
+
           if let f = args["buttonFontSize"] as? NSNumber { fontSize = f }
           if let s = args["buttonSpacing"] as? NSNumber { spacing = s }
 
@@ -166,7 +165,7 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
           if let s = args["buttonIconName"] as? String { iconName = s }
           if let m = args["buttonIconRenderingMode"] as? String { iconMode = m }
 
-          var image: UIImage? = nil
+          var image: UIImage?
           if let bytes = iconBytes {
             image = UIImage(data: bytes.data, scale: UIScreen.main.scale)
           } else if let name = iconName, !name.isEmpty {
@@ -207,10 +206,10 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
           } else if let c = iconColor, let img = image, #available(iOS 13.0, *) {
             image = img.withTintColor(c, renderingMode: .alwaysOriginal)
           }
-          
+
           finalImage = image
-          
-          setButtonContent(title: title, image: finalImage, iconOnly: (title == nil), fontSize: fontSize, spacing: spacing)
+
+          setButtonContent(title: title, image: finalImage, iconOnly: title == nil, fontSize: fontSize, spacing: spacing)
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing icon args", details: nil)) }
       case "setBrightness":
@@ -297,70 +296,70 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
   }
 
   private func setButtonContent(
-      title: String?,
-      image: UIImage?,
-      iconOnly: Bool,
-      fontSize: NSNumber?,
-      spacing: NSNumber?
+    title: String?,
+    image: UIImage?,
+    iconOnly: Bool,
+    fontSize: NSNumber?,
+    spacing: NSNumber?
   ) {
-      // 👉 默认值
-      let fontSizeValue = CGFloat(fontSize?.floatValue ?? 14)
-      let spacingValue = CGFloat(spacing?.floatValue ?? 6)
-      let font = UIFont.systemFont(ofSize: fontSizeValue)
-      
-      if #available(iOS 15.0, *) {
-          var cfg = button.configuration ?? .plain()
-          
-          cfg.image = image
-          
-          if !iconOnly, let title = title {
-              var attrTitle = AttributedString(title)
-              attrTitle.font = font
-              cfg.attributedTitle = attrTitle
-          } else {
-              cfg.attributedTitle = nil
-          }
-          
-          // 👉 间距控制
-          cfg.imagePadding = (title != nil && image != nil && !iconOnly) ? spacingValue : 0
-          
-          // 👉 iconOnly padding
-          if iconOnly {
-              cfg.contentInsets = NSDirectionalEdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2)
-          } else {
-              cfg.contentInsets = .zero
-          }
-          
-          button.configuration = cfg
-          
+    // 👉 默认值
+    let fontSizeValue = CGFloat(fontSize?.floatValue ?? 14)
+    let spacingValue = CGFloat(spacing?.floatValue ?? 6)
+    let font = UIFont.systemFont(ofSize: fontSizeValue)
+
+    if #available(iOS 15.0, *) {
+      var cfg = button.configuration ?? .plain()
+
+      cfg.image = image
+
+      if !iconOnly, let title = title {
+        var attrTitle = AttributedString(title)
+        attrTitle.font = font
+        cfg.attributedTitle = attrTitle
       } else {
-          button.setTitle(iconOnly ? nil : title, for: .normal)
-          button.setImage(image, for: .normal)
-          button.titleLabel?.font = font
-          
-          if iconOnly {
-              button.contentEdgeInsets = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
-          } else if title != nil && image != nil {
-              // 👉 间距控制（老版本）
-              button.imageEdgeInsets = UIEdgeInsets(
-                  top: 0,
-                  left: -spacingValue / 2,
-                  bottom: 0,
-                  right: spacingValue / 2
-              )
-              button.titleEdgeInsets = UIEdgeInsets(
-                  top: 0,
-                  left: spacingValue / 2,
-                  bottom: 0,
-                  right: -spacingValue / 2
-              )
-              button.contentEdgeInsets = .zero
-          } else {
-              // 👉 reset（防止复用错位）
-              button.imageEdgeInsets = .zero
-              button.titleEdgeInsets = .zero
-              button.contentEdgeInsets = .zero
-          }
+        cfg.attributedTitle = nil
       }
+
+      // 👉 间距控制
+      cfg.imagePadding = (title != nil && image != nil && !iconOnly) ? spacingValue : 0
+
+      // 👉 iconOnly padding
+      if iconOnly {
+        cfg.contentInsets = NSDirectionalEdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2)
+      } else {
+        cfg.contentInsets = .zero
+      }
+
+      button.configuration = cfg
+
+    } else {
+      button.setTitle(iconOnly ? nil : title, for: .normal)
+      button.setImage(image, for: .normal)
+      button.titleLabel?.font = font
+
+      if iconOnly {
+        button.contentEdgeInsets = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+      } else if title != nil && image != nil {
+        // 👉 间距控制（老版本）
+        button.imageEdgeInsets = UIEdgeInsets(
+          top: 0,
+          left: -spacingValue / 2,
+          bottom: 0,
+          right: spacingValue / 2
+        )
+        button.titleEdgeInsets = UIEdgeInsets(
+          top: 0,
+          left: spacingValue / 2,
+          bottom: 0,
+          right: -spacingValue / 2
+        )
+        button.contentEdgeInsets = .zero
+      } else {
+        // 👉 reset（防止复用错位）
+        button.imageEdgeInsets = .zero
+        button.titleEdgeInsets = .zero
+        button.contentEdgeInsets = .zero
+      }
+    }
   }
 }
