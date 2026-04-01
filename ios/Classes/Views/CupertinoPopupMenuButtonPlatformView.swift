@@ -7,6 +7,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
   private let button: UIButton
   private var currentButtonStyle: String = "automatic"
   private var isRoundButton: Bool = false
+  private var selectedIndex: Int? = nil
   private var labels: [String] = []
   private var symbols: [String] = []
   private var iconBytes: [FlutterStandardTypedData?] = []
@@ -32,6 +33,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
 
     var title: String? = nil
     var iconName: String? = nil
+    var selectedIndex: Int? = nil
 
     var buttonIconBytes: FlutterStandardTypedData? = nil
 
@@ -52,6 +54,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
     var buttonIconPalette: [NSNumber] = []
 
     if let dict = args as? [String: Any] {
+      if let i = dict["selectedIndex"] as? Int { selectedIndex = i }
       if let t = dict["buttonTitle"] as? String { title = t }
       if let s = dict["buttonIconName"] as? String { iconName = s }
       if let i = dict["buttonIconBytes"] as? FlutterStandardTypedData { buttonIconBytes = i }
@@ -95,6 +98,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
     ])
 
     // Store
+    self.selectedIndex = selectedIndex
     self.labels = labels
     self.symbols = symbols
     self.iconBytes = iconBytes
@@ -154,6 +158,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
         result(["width": Double(size.width), "height": Double(size.height)])
       case "setItems":
         if let args = call.arguments as? [String: Any] {
+          self.selectedIndex = (args["selectedIndex"] as? Int) ?? nil
           self.labels = (args["labels"] as? [String]) ?? []
           self.symbols = (args["sfSymbols"] as? [String]) ?? []
           self.iconBytes = (args["iconBytes"] as? [FlutterStandardTypedData?]) ?? []
@@ -247,7 +252,9 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
 
         if i < symbols.count {
           if i < iconBytes.count {
-              image = UIImage(data: iconBytes[i]!.data, scale: UIScreen.main.scale)
+            if let imageData = iconBytes[i] {
+              image = UIImage(data: imageData.data, scale: UIScreen.main.scale)
+            }
           } else {
               // Use SF Symbol
               image = UIImage(systemName: symbols[i])
@@ -257,7 +264,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
         if let sizes = defaultSizes, i < sizes.count {
           let s = CGFloat(truncating: sizes[i])
           if s > 0, let img = image {
-//            image = img.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: s))
+            // image = img.applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: s))
             image = img.resized(to: CGSize(width: Int(truncating: sizes[i]), height: Int(truncating: sizes[i]))) // 自定义尺寸
           }
         }
@@ -305,7 +312,11 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
           }
         }
         let isEnabled = i < enabled.count ? enabled[i] : true
-        let action = UIAction(title: title, image: image, attributes: isEnabled ? [] : [.disabled]) { [weak self] _ in
+        var state: UIMenuElement.State = .off
+        if let selectedIndex = self.selectedIndex, selectedIndex == i {
+          state = .on
+        }
+        let action = UIAction(title: title, image: image, attributes: isEnabled ? [] : [.disabled], state: state) { [weak self] _ in
           self?.channel.invokeMethod("itemSelected", arguments: ["index": i])
         }
         current.append(action)

@@ -47,6 +47,7 @@ class CNPopupMenuButton extends StatefulWidget {
     required this.items,
     required this.onSelected,
     this.tint,
+    this.selectedIndex,
     this.height = 32.0,
     this.shrinkWrap = false,
     this.buttonStyle = CNButtonStyle.plain,
@@ -61,6 +62,7 @@ class CNPopupMenuButton extends StatefulWidget {
     required this.items,
     required this.onSelected,
     this.tint,
+    this.selectedIndex,
     double size = 44.0, // button diameter (width = height)
     this.buttonStyle = CNButtonStyle.glass,
   }) : buttonLabel = null,
@@ -69,6 +71,8 @@ class CNPopupMenuButton extends StatefulWidget {
        height = size,
        shrinkWrap = false,
        super();
+
+  final int? selectedIndex;
 
   /// Text for the button (null when using [buttonIcon]).
   final String? buttonLabel; // null in icon mode
@@ -236,6 +240,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     }
 
     final creationParams = <String, dynamic>{
+      if (widget.selectedIndex != null) 'selectedIndex': widget.selectedIndex,
       if (widget.buttonLabel != null) 'buttonTitle': widget.buttonLabel,
       if (widget.buttonIcon != null) 'buttonIconName': widget.buttonIcon!.name,
       if (widget.buttonIcon?.bytes != null)
@@ -478,6 +483,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     }
 
     await ch.invokeMethod('setItems', {
+      if (widget.selectedIndex != null) 'selectedIndex': widget.selectedIndex,
       'labels': updLabels,
       'sfSymbols': updSymbols,
       'iconBytes': updIconBytes,
