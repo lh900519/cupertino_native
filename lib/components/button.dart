@@ -27,6 +27,7 @@ class CNButton extends StatefulWidget {
     this.shrinkWrap = false,
     this.style = CNButtonStyle.plain,
     this.round = false,
+    this.animated,
   });
 
   /// Creates a round, icon-only variant of [CNButton].
@@ -39,6 +40,7 @@ class CNButton extends StatefulWidget {
     double size = 44.0,
     this.style = CNButtonStyle.glass,
     this.round = true,
+    this.animated,
   }) : label = null,
        fontSize = null,
        spacing = null,
@@ -63,6 +65,8 @@ class CNButton extends StatefulWidget {
 
   /// Whether the control is interactive and tappable.
   final bool enabled;
+
+  final String? animated;
 
   /// Accent/tint color.
   final Color? tint;
@@ -93,6 +97,7 @@ class _CNButtonState extends State<CNButton> {
   bool? _lastIsDark;
   int? _lastTint;
   String? _lastTitle;
+  String? _lastAnimated;
   double? _lastFontSize;
   double? _lastSpacing;
   String? _lastIconName;
@@ -255,6 +260,8 @@ class _CNButtonState extends State<CNButton> {
     _lastIconSize = widget.icon?.size;
     _lastIconColor = resolveColorToArgb(widget.icon?.color, context);
     _lastStyle = widget.style;
+    _lastAnimated = widget.animated;
+
     if (!widget.isIcon) {
       _requestIntrinsicSize();
     }
@@ -299,6 +306,10 @@ class _CNButtonState extends State<CNButton> {
     if (_lastStyle != widget.style) {
       await ch.invokeMethod('setStyle', {'buttonStyle': widget.style.name});
       _lastStyle = widget.style;
+    }
+    if (_lastAnimated != widget.animated) {
+      await ch.invokeMethod('setAnimated', {'animated': widget.animated});
+      _lastAnimated = widget.animated;
     }
     // Enabled state
     await ch.invokeMethod('setEnabled', {

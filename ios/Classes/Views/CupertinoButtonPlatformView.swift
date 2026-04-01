@@ -217,10 +217,55 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
           if #available(iOS 13.0, *) { self.container.overrideUserInterfaceStyle = isDark ? .dark : .light }
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
+      case "setAnimated":
+        if let args = call.arguments as? [String: Any], let e = args["animated"] as? String {
+          if e == "rotate" {
+            startRotateAnimation()
+          } else if e == "" {
+            stopRotateAnimation()
+          }
+          result(nil)
+        } else { result(FlutterError(code: "bad_args", message: "Missing animated", details: nil)) }
       default:
         result(FlutterMethodNotImplemented)
       }
     }
+  }
+
+  func getCurrentAngle(layer: CALayer) -> Double {
+    let transform = layer.presentation()?.transform ?? layer.transform
+
+    // 从 CATransform3D 提取旋转角度
+    return atan2(Double(transform.m12), Double(transform.m11))
+  }
+
+  func startRotateAnimation() {
+    guard let layer = button.imageView?.layer else { return }
+
+    // 如果已经在转，直接返回
+    if layer.animation(forKey: "rotateAnimation") != nil { return }
+
+    // 1. 获取当前角度
+    let currentAngle = getCurrentAngle(layer: layer)
+
+    // 2. 创建动画
+    let rotation = CABasicAnimation(keyPath: "transform.rotation.z")
+    rotation.fromValue = currentAngle
+    rotation.toValue = currentAngle + Double.pi * 2
+    rotation.duration = 1.0
+    rotation.repeatCount = .infinity
+
+    layer.add(rotation, forKey: "rotateAnimation")
+  }
+
+  func stopRotateAnimation() {
+    guard let layer = button.imageView?.layer else { return }
+
+    if let presentation = layer.presentation() {
+      layer.transform = presentation.transform
+    }
+
+    layer.removeAnimation(forKey: "rotateAnimation")
   }
 
   func view() -> UIView { container }
