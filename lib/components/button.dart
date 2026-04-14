@@ -66,6 +66,7 @@ class CNButton extends StatefulWidget {
   /// Whether the control is interactive and tappable.
   final bool enabled;
 
+  /// animated.
   final String? animated;
 
   /// Accent/tint color.

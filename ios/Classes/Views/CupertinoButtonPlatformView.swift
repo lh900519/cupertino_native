@@ -232,28 +232,19 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
     }
   }
 
-  func getCurrentAngle(layer: CALayer) -> Double {
-    let transform = layer.presentation()?.transform ?? layer.transform
-
-    // 从 CATransform3D 提取旋转角度
-    return atan2(Double(transform.m12), Double(transform.m11))
-  }
-
   func startRotateAnimation() {
     guard let layer = button.imageView?.layer else { return }
 
-    // 如果已经在转，直接返回
     if layer.animation(forKey: "rotateAnimation") != nil { return }
 
-    // 1. 获取当前角度
-    let currentAngle = getCurrentAngle(layer: layer)
+    layer.transform = CATransform3DIdentity
 
-    // 2. 创建动画
     let rotation = CABasicAnimation(keyPath: "transform.rotation.z")
-    rotation.fromValue = currentAngle
-    rotation.toValue = currentAngle + Double.pi * 2
+    rotation.fromValue = 0
+    rotation.toValue = Double.pi * 2
     rotation.duration = 1.0
     rotation.repeatCount = .infinity
+    rotation.isCumulative = true
 
     layer.add(rotation, forKey: "rotateAnimation")
   }
@@ -261,11 +252,31 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
   func stopRotateAnimation() {
     guard let layer = button.imageView?.layer else { return }
 
-    if let presentation = layer.presentation() {
-      layer.transform = presentation.transform
-    }
+    let t = layer.presentation()?.transform ?? layer.transform
+    let currentAngle = atan2(t.m12, t.m11)
 
     layer.removeAnimation(forKey: "rotateAnimation")
+
+    let normalized = currentAngle.truncatingRemainder(dividingBy: (.pi * 2))
+    let remaining = (.pi * 2) - normalized
+
+    let speed = CGFloat.pi * 2 / 1.0
+    let duration = remaining / speed
+
+    let fix = CABasicAnimation(keyPath: "transform.rotation.z")
+    fix.fromValue = currentAngle
+    fix.toValue = currentAngle + remaining
+    fix.duration = CFTimeInterval(duration)
+    fix.timingFunction = CAMediaTimingFunction(name: .easeOut)
+    fix.fillMode = .forwards
+    fix.isRemovedOnCompletion = false
+
+    layer.add(fix, forKey: "rotateFixAnimation")
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+      layer.removeAnimation(forKey: "rotateFixAnimation")
+      layer.transform = CATransform3DIdentity
+    }
   }
 
   func view() -> UIView { container }
