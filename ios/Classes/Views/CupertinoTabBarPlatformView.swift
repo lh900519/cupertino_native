@@ -1,6 +1,19 @@
 import Flutter
 import UIKit
 
+/// A tab bar that asks UIKit for the stacked icon/title arrangement on iPad.
+///
+/// iPhone keeps the system's default compact arrangement so this adaptation
+/// does not change the existing iPhone layout behavior.
+private final class IPadStackedTabBar: UITabBar {
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if #available(iOS 17.0, *) {
+            traitOverrides.horizontalSizeClass = .compact
+        }
+    }
+}
+
 class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
     // MARK: - Properties
     private let channel: FlutterMethodChannel
@@ -77,7 +90,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         self.rightInsetVal = config.rightInset
         self.currentStyle = config.style
         self.isDarkMode = config.isDark
-      
+
         setupContainer()
 
         setupTabBars(with: config)
@@ -135,7 +148,10 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
     }
 
     private func setupSingleTabBar(with config: TabBarConfiguration, totalCount: Int) {
-        let bar = createTabBar(with: config.style)
+        let bar = createTabBar(
+            with: config.style,
+            stacked: UIDevice.current.userInterfaceIdiom == .pad
+        )
         tabBar = bar
 
         bar.items = buildTabBarItems(for: 0..<totalCount, with: config)
@@ -148,7 +164,10 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
     private func setupSplitTabBars(with config: TabBarConfiguration, totalCount: Int) {
         let leftEnd = totalCount - config.rightCount
 
-        let leftBar = createTabBar(with: config.style)
+        let leftBar = createTabBar(
+            with: config.style,
+            stacked: UIDevice.current.userInterfaceIdiom == .pad && leftEnd > 1
+        )
         let rightBar = createTabBar(with: config.style)
 
         tabBarLeft = leftBar
@@ -173,8 +192,10 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         applySplitTabBarConstraints(leftBar: leftBar, rightBar: rightBar, config: config)
     }
 
-    private func createTabBar(with style: TabBarStyle?) -> UITabBar {
-        let bar = UITabBar(frame: .zero)
+    private func createTabBar(with style: TabBarStyle?, stacked: Bool = false) -> UITabBar {
+        let bar: UITabBar = stacked
+            ? IPadStackedTabBar(frame: .zero)
+            : UITabBar(frame: .zero)
         bar.delegate = self
         bar.translatesAutoresizingMaskIntoConstraints = false
 
@@ -235,11 +256,11 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
                 if index < config.iconBytesActive.count {
                     selectedImage = UIImage(data: config.iconBytesActive[index].data, scale: UIScreen.main.scale)
                 }
-              
+
                 // if let col = config.style?.tintColor, #available(iOS 13.0, *) {
                 //   selectedImage = selectedImage?.withTintColor(col, renderingMode: .alwaysOriginal)
                 // }
-              
+
             } else {
                 // Use SF Symbol
                 image = UIImage(systemName: symbol)
