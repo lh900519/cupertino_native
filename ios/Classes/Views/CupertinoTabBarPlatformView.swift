@@ -168,7 +168,10 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             with: config.style,
             stacked: UIDevice.current.userInterfaceIdiom == .pad && leftEnd > 1
         )
-        let rightBar = createTabBar(with: config.style)
+        let rightBar = createTabBar(
+            with: config.style,
+            stacked: UIDevice.current.userInterfaceIdiom == .pad
+        )
 
         tabBarLeft = leftBar
         tabBarRight = rightBar
@@ -288,16 +291,18 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
 
     // MARK: - Constraints
     private func applySingleTabBarConstraints(to bar: UITabBar) {
+        let bottomOffset: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 10 : 20
         NSLayoutConstraint.activate([
             bar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: -20),
             bar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: 20),
             bar.topAnchor.constraint(equalTo: container.topAnchor),
-            bar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20)
+            bar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: bottomOffset)
         ])
     }
 
     private func applySplitTabBarConstraints(leftBar: UITabBar, rightBar: UITabBar, config: TabBarConfiguration) {
         let spacing = config.splitSpacing
+        let bottomOffset: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 10 : 20
         let leftWidth = leftBar.sizeThatFits(.zero).width + config.leftInset * 2
         let rightWidth = rightBar.sizeThatFits(.zero).width + config.rightInset * 2
         let totalWidth = leftWidth + rightWidth + spacing
@@ -311,12 +316,12 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
                 leftBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: config.leftInset - 20),
                 leftBar.trailingAnchor.constraint(equalTo: rightBar.leadingAnchor, constant: -spacing),
                 leftBar.topAnchor.constraint(equalTo: container.topAnchor),
-                leftBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
+                leftBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: bottomOffset),
 
                 // Right bar
                 rightBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -config.rightInset + 20),
                 rightBar.topAnchor.constraint(equalTo: container.topAnchor),
-                rightBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
+                rightBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: bottomOffset),
                 rightBar.widthAnchor.constraint(equalTo: container.widthAnchor, multiplier: rightFraction),
             ])
         } else {
@@ -325,13 +330,13 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
                 // Right bar
                 rightBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -config.rightInset + 20),
                 rightBar.topAnchor.constraint(equalTo: container.topAnchor),
-                rightBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
+                rightBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: bottomOffset),
                 rightBar.widthAnchor.constraint(equalToConstant: rightWidth),
 
                 // Left bar
                 leftBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: config.leftInset - 20),
                 leftBar.topAnchor.constraint(equalTo: container.topAnchor),
-                leftBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: 20),
+                leftBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: bottomOffset),
                 leftBar.widthAnchor.constraint(equalToConstant: leftWidth),
 
                 // Spacing constraint
