@@ -67,6 +67,7 @@ class _TabBarDemoPageState extends State<TabBarDemoPage>
                 CNTabBarItem(icon: CNSymbol('magnifyingglass')),
               ],
               currentIndex: _index,
+              labelColor: CupertinoColors.systemOrange,
               split: true,
               rightCount: 1,
               shrinkCentered: true,

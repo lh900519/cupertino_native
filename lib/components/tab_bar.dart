@@ -26,6 +26,7 @@ class CNTabBar extends StatefulWidget {
     required this.currentIndex,
     required this.onTap,
     this.tint,
+    this.labelColor,
     this.backgroundColor,
     this.iconSize,
     this.height,
@@ -46,6 +47,11 @@ class CNTabBar extends StatefulWidget {
 
   /// Accent/tint color.
   final Color? tint;
+
+  /// Default text color for unselected item labels.
+  ///
+  /// When null, the platform's system-default unselected label color is used.
+  final Color? labelColor;
 
   /// Background color for the bar.
   final Color? backgroundColor;
@@ -75,6 +81,7 @@ class _CNTabBarState extends State<CNTabBar> {
   MethodChannel? _channel;
   int? _lastIndex;
   int? _lastTint;
+  int? _lastLabelColor;
   int? _lastBg;
   bool? _lastIsDark;
   double? _intrinsicHeight;
@@ -119,7 +126,7 @@ class _CNTabBarState extends State<CNTabBar> {
           currentIndex: widget.currentIndex,
           onTap: widget.onTap,
           backgroundColor: widget.backgroundColor,
-          inactiveColor: CupertinoColors.inactiveGray,
+          inactiveColor: widget.labelColor ?? CupertinoColors.inactiveGray,
           activeColor: widget.tint ?? CupertinoTheme.of(context).primaryColor,
         ),
       );
@@ -166,6 +173,8 @@ class _CNTabBarState extends State<CNTabBar> {
               widget.backgroundColor,
               context,
             ),
+          if (widget.labelColor != null)
+            'labelColor': resolveColorToArgb(widget.labelColor, context),
         }),
     };
 
@@ -198,6 +207,7 @@ class _CNTabBarState extends State<CNTabBar> {
     ch.setMethodCallHandler(_onMethodCall);
     _lastIndex = widget.currentIndex;
     _lastTint = resolveColorToArgb(_effectiveTint, context);
+    _lastLabelColor = resolveColorToArgb(widget.labelColor, context);
     _lastBg = resolveColorToArgb(widget.backgroundColor, context);
     _lastIsDark = _isDark;
     _requestIntrinsicSize();
@@ -225,6 +235,7 @@ class _CNTabBarState extends State<CNTabBar> {
     // Capture theme-dependent values before awaiting
     final idx = widget.currentIndex;
     final tint = resolveColorToArgb(_effectiveTint, context);
+    final labelColor = resolveColorToArgb(widget.labelColor, context);
     final bg = resolveColorToArgb(widget.backgroundColor, context);
     if (_lastIndex != idx) {
       await ch.invokeMethod('setSelectedIndex', {'index': idx});
@@ -235,6 +246,10 @@ class _CNTabBarState extends State<CNTabBar> {
     if (_lastTint != tint && tint != null) {
       style['tint'] = tint;
       _lastTint = tint;
+    }
+    if (_lastLabelColor != labelColor) {
+      style['labelColor'] = labelColor;
+      _lastLabelColor = labelColor;
     }
     if (_lastBg != bg && bg != null) {
       style['backgroundColor'] = bg;
@@ -267,6 +282,9 @@ class _CNTabBarState extends State<CNTabBar> {
         'sfSymbols': symbols,
         'iconBytes': iconBytes,
         'iconBytesActive': activeIconBytes,
+        'sfSymbolSizes': widget.items
+            .map((e) => widget.iconSize ?? e.icon?.size)
+            .toList(),
         'selectedIndex': widget.currentIndex,
       });
       _lastLabels = labels;

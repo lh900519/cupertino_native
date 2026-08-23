@@ -5,7 +5,113 @@ import UIKit
 ///
 /// iPhone keeps the system's default compact arrangement so this adaptation
 /// does not change the existing iPhone layout behavior.
-private final class IPadStackedTabBar: UITabBar {
+private final class TabBarLabelOverlay: UILabel {}
+
+private class LabelColorTabBar: UITabBar {
+    var defaultLabelColor: UIColor? {
+        didSet {
+            restoreAllNativeLabels()
+            setNeedsLayout()
+        }
+    }
+
+    private let overlays = NSMapTable<UILabel, TabBarLabelOverlay>.weakToStrongObjects()
+    private let nativeAlphas = NSMapTable<UILabel, NSNumber>.weakToStrongObjects()
+    private var hasPendingLabelUpdate = false
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard #available(iOS 26.0, *) else { return }
+        scheduleLabelUpdate()
+    }
+
+    private func scheduleLabelUpdate() {
+        guard !hasPendingLabelUpdate else { return }
+        hasPendingLabelUpdate = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.hasPendingLabelUpdate = false
+            self.applyDefaultLabelColor(in: self, selectedContext: nil)
+        }
+    }
+
+    private func applyDefaultLabelColor(in view: UIView, selectedContext: Bool?) {
+        if view is TabBarLabelOverlay { return }
+
+        let context = (view as? UIControl)?.isSelected ?? selectedContext
+        if let label = view as? UILabel {
+            let isSelected = context == true || label.text == selectedItem?.title
+            if !isSelected, let defaultLabelColor {
+                showOverlay(for: label, color: defaultLabelColor)
+            } else {
+                restoreNativeLabel(label)
+            }
+        }
+
+        for subview in view.subviews {
+            applyDefaultLabelColor(in: subview, selectedContext: context)
+        }
+    }
+
+    private func showOverlay(for label: UILabel, color: UIColor) {
+        guard let parent = label.superview else { return }
+        let overlay: TabBarLabelOverlay
+        if let existing = overlays.object(forKey: label) {
+            overlay = existing
+        } else {
+            overlay = TabBarLabelOverlay(frame: label.frame)
+            overlay.isUserInteractionEnabled = false
+            overlay.isAccessibilityElement = false
+            overlays.setObject(overlay, forKey: label)
+            nativeAlphas.setObject(NSNumber(value: Double(label.alpha)), forKey: label)
+            parent.addSubview(overlay)
+        }
+
+        overlay.bounds = label.bounds
+        overlay.center = label.center
+        overlay.transform = label.transform
+        overlay.font = label.font
+        overlay.textAlignment = label.textAlignment
+        overlay.numberOfLines = label.numberOfLines
+        overlay.lineBreakMode = label.lineBreakMode
+        overlay.adjustsFontSizeToFitWidth = label.adjustsFontSizeToFitWidth
+        overlay.minimumScaleFactor = label.minimumScaleFactor
+        overlay.baselineAdjustment = label.baselineAdjustment
+        overlay.isHidden = label.isHidden
+
+        if let attributedText = label.attributedText {
+            let customText = NSMutableAttributedString(attributedString: attributedText)
+            customText.addAttribute(
+                .foregroundColor,
+                value: color,
+                range: NSRange(location: 0, length: customText.length)
+            )
+            overlay.attributedText = customText
+        } else {
+            overlay.text = label.text
+            overlay.textColor = color
+        }
+        label.alpha = 0
+    }
+
+    private func restoreNativeLabel(_ label: UILabel) {
+        if let alpha = nativeAlphas.object(forKey: label) {
+            label.alpha = CGFloat(truncating: alpha)
+        }
+        overlays.object(forKey: label)?.removeFromSuperview()
+        overlays.removeObject(forKey: label)
+        nativeAlphas.removeObject(forKey: label)
+    }
+
+    private func restoreAllNativeLabels() {
+        let labels = overlays.keyEnumerator().allObjects.compactMap { $0 as? UILabel }
+        for label in labels {
+            restoreNativeLabel(label)
+        }
+    }
+}
+
+private final class IPadStackedTabBar: LabelColorTabBar {
     override func didMoveToWindow() {
         super.didMoveToWindow()
         if #available(iOS 17.0, *) {
@@ -37,6 +143,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
     private struct TabBarStyle {
         let tintColor: UIColor?
         let backgroundColor: UIColor?
+        let labelColor: UIColor?
     }
 
     private struct TabBarConfiguration {
@@ -115,7 +222,12 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         if let styleDict = dict["style"] as? [String: Any] {
             let tintColor = (styleDict["tint"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
             let backgroundColor = (styleDict["backgroundColor"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
-            style = TabBarStyle(tintColor: tintColor, backgroundColor: backgroundColor)
+            let labelColor = (styleDict["labelColor"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
+            style = TabBarStyle(
+                tintColor: tintColor,
+                backgroundColor: backgroundColor,
+                labelColor: labelColor
+            )
         }
 
         return TabBarConfiguration(
@@ -156,6 +268,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
 
         bar.items = buildTabBarItems(for: 0..<totalCount, with: config)
         setSelectedItem(at: config.selectedIndex, for: bar, in: 0..<totalCount)
+        applyLabelAppearance()
 
         container.addSubview(bar)
         applySingleTabBarConstraints(to: bar)
@@ -188,6 +301,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             setSelectedItem(at: rightIndex, for: rightBar, in: 0..<config.rightCount)
             leftBar.selectedItem = nil
         }
+        applyLabelAppearance()
 
         container.addSubview(leftBar)
         container.addSubview(rightBar)
@@ -198,7 +312,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
     private func createTabBar(with style: TabBarStyle?, stacked: Bool = false) -> UITabBar {
         let bar: UITabBar = stacked
             ? IPadStackedTabBar(frame: .zero)
-            : UITabBar(frame: .zero)
+            : LabelColorTabBar(frame: .zero)
         bar.delegate = self
         bar.translatesAutoresizingMaskIntoConstraints = false
 
@@ -210,17 +324,14 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         if #available(iOS 10.0, *), let tintColor = style?.tintColor {
             bar.tintColor = tintColor
         }
+        if #available(iOS 10.0, *) {
+            bar.unselectedItemTintColor = style?.labelColor
+        }
+        (bar as? LabelColorTabBar)?.defaultLabelColor = style?.labelColor
 
         // Configure appearance
         if #available(iOS 13.0, *) {
-            let appearance = UITabBarAppearance()
-            appearance.configureWithTransparentBackground()
-            appearance.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 0)
-
-            bar.standardAppearance = appearance
-            if #available(iOS 15.0, *) {
-                bar.scrollEdgeAppearance = appearance
-            }
+            applyAppearance(style, to: bar)
         }
 
         return bar
@@ -277,7 +388,9 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             }
         }
 
-        return UITabBarItem(title: title, image: image, selectedImage: selectedImage)
+        let item = UITabBarItem(title: title, image: image, selectedImage: selectedImage)
+        applyLabelColor(config.style?.labelColor, to: item)
+        return item
     }
 
     private func setSelectedItem(at index: Int, for tabBar: UITabBar, in range: Range<Int>) {
@@ -450,6 +563,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             bar.items = buildTabBarItems(for: 0..<count, with: config)
             setSelectedItem(at: config.selectedIndex, for: bar, in: 0..<count)
         }
+        applyLabelAppearance()
     }
 
     private func handleSetLayout(call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -553,22 +667,38 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
             return
         }
 
-        if let tintValue = args["tint"] as? NSNumber {
-            let tintColor = Self.colorFromARGB(tintValue.intValue)
-            applyTintColor(tintColor)
-            currentStyle = TabBarStyle(
-                tintColor: tintColor,
-                backgroundColor: currentStyle?.backgroundColor
-            )
+        let hasTint = args.keys.contains("tint")
+        let hasBackgroundColor = args.keys.contains("backgroundColor")
+        let hasLabelColor = args.keys.contains("labelColor")
+
+        var tintColor = currentStyle?.tintColor
+        var backgroundColor = currentStyle?.backgroundColor
+        var labelColor = currentStyle?.labelColor
+
+        if hasTint {
+            tintColor = (args["tint"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
+        }
+        if hasBackgroundColor {
+            backgroundColor = (args["backgroundColor"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
+        }
+        if hasLabelColor {
+            labelColor = (args["labelColor"] as? NSNumber).map { Self.colorFromARGB($0.intValue) }
         }
 
-        if let backgroundValue = args["backgroundColor"] as? NSNumber {
-            let backgroundColor = Self.colorFromARGB(backgroundValue.intValue)
+        currentStyle = TabBarStyle(
+            tintColor: tintColor,
+            backgroundColor: backgroundColor,
+            labelColor: labelColor
+        )
+
+        if hasTint, let tintColor {
+            applyTintColor(tintColor)
+        }
+        if hasBackgroundColor, let backgroundColor {
             applyBackgroundColor(backgroundColor)
-            currentStyle = TabBarStyle(
-                tintColor: currentStyle?.tintColor,
-                backgroundColor: backgroundColor
-            )
+        }
+        if hasLabelColor {
+            applyLabelAppearance()
         }
 
         result(nil)
@@ -584,6 +714,46 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
         tabBar?.barTintColor = color
         tabBarLeft?.barTintColor = color
         tabBarRight?.barTintColor = color
+    }
+
+    @available(iOS 13.0, *)
+    private func applyAppearance(_ style: TabBarStyle?, to bar: UITabBar) {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.stackedLayoutAppearance.normal.titlePositionAdjustment = UIOffset(horizontal: 0, vertical: 0)
+
+        if let labelColor = style?.labelColor {
+            let attributes: [NSAttributedString.Key: Any] = [.foregroundColor: labelColor]
+            appearance.stackedLayoutAppearance.normal.titleTextAttributes = attributes
+            appearance.inlineLayoutAppearance.normal.titleTextAttributes = attributes
+            appearance.compactInlineLayoutAppearance.normal.titleTextAttributes = attributes
+        }
+
+        bar.standardAppearance = appearance
+        if #available(iOS 15.0, *) {
+            bar.scrollEdgeAppearance = appearance
+        }
+    }
+
+    private func applyLabelAppearance() {
+        guard #available(iOS 13.0, *) else { return }
+        for bar in [tabBar, tabBarLeft, tabBarRight].compactMap({ $0 }) {
+            if #available(iOS 10.0, *) {
+                bar.unselectedItemTintColor = currentStyle?.labelColor
+            }
+            (bar as? LabelColorTabBar)?.defaultLabelColor = currentStyle?.labelColor
+            applyAppearance(currentStyle, to: bar)
+            for item in bar.items ?? [] {
+                applyLabelColor(currentStyle?.labelColor, to: item)
+            }
+        }
+    }
+
+    private func applyLabelColor(_ color: UIColor?, to item: UITabBarItem) {
+        let attributes: [NSAttributedString.Key: Any]? = color.map {
+            [.foregroundColor: $0]
+        }
+        item.setTitleTextAttributes(attributes, for: .normal)
     }
 
     private func handleSetBrightness(call: FlutterMethodCall, result: @escaping FlutterResult) {
