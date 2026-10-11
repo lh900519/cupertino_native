@@ -242,6 +242,9 @@ class CupertinoPopupMenuButtonNSView: NSView {
           self.alphaValue = p.boolValue ? 0.7 : 1.0
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing pressed", details: nil)) }
+      case "dismissMenu":
+        self.popupMenu.cancelTracking()
+        result(nil)
       default:
         result(FlutterMethodNotImplemented)
       }

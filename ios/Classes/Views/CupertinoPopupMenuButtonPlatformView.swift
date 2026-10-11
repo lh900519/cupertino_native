@@ -226,6 +226,11 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
           self.button.isHighlighted = p.boolValue
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing pressed", details: nil)) }
+      case "dismissMenu":
+        if #available(iOS 14.0, *) {
+          self.button.contextMenuInteraction?.dismissMenu()
+        }
+        result(nil)
       default:
         result(FlutterMethodNotImplemented)
       }

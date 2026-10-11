@@ -36,6 +36,27 @@ class CNPopupMenuDivider extends CNPopupMenuEntry {
 
 // Reusable style enum for buttons across widgets (popup menu, future CNButton, ...)
 
+/// Controller for a [CNPopupMenuButton] that allows imperative control of
+/// the underlying native menu.
+class CNPopupMenuButtonController {
+  MethodChannel? _channel;
+
+  void _attach(MethodChannel channel) {
+    _channel = channel;
+  }
+
+  void _detach() {
+    _channel = null;
+  }
+
+  /// Dismisses the native menu if it is currently shown.
+  Future<void> dismissMenu() async {
+    final channel = _channel;
+    if (channel == null) return;
+    await channel.invokeMethod('dismissMenu');
+  }
+}
+
 /// A Cupertino-native popup menu button.
 ///
 /// On iOS/macOS this embeds a native popup button and shows a native menu.
@@ -51,6 +72,7 @@ class CNPopupMenuButton extends StatefulWidget {
     this.height = 32.0,
     this.shrinkWrap = false,
     this.buttonStyle = CNButtonStyle.plain,
+    this.controller,
   }) : buttonIcon = null,
        width = null,
        round = false;
@@ -65,6 +87,7 @@ class CNPopupMenuButton extends StatefulWidget {
     this.selectedIndex,
     double size = 44.0, // button diameter (width = height)
     this.buttonStyle = CNButtonStyle.glass,
+    this.controller,
   }) : buttonLabel = null,
        round = true,
        width = size,
@@ -102,6 +125,9 @@ class CNPopupMenuButton extends StatefulWidget {
   /// Visual style to apply to the button.
   final CNButtonStyle buttonStyle;
 
+  /// Optional controller to imperatively control the native menu.
+  final CNPopupMenuButtonController? controller;
+
   /// Whether this instance is configured as an icon button variant.
   bool get isIconButton => buttonIcon != null;
 
@@ -130,6 +156,11 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
   @override
   void didUpdateWidget(covariant CNPopupMenuButton oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach();
+      final ch = _channel;
+      if (ch != null) widget.controller?._attach(ch);
+    }
     _syncPropsToNativeIfNeeded();
   }
 
@@ -141,6 +172,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
 
   @override
   void dispose() {
+    widget.controller?._detach();
     _channel?.setMethodCallHandler(null);
     super.dispose();
   }
@@ -344,6 +376,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton> {
     final ch = MethodChannel('CupertinoNativePopupMenuButton_$id');
     _channel = ch;
     ch.setMethodCallHandler(_onMethodCall);
+    widget.controller?._attach(ch);
     _lastTint = resolveColorToArgb(_effectiveTint, context);
     _lastIsDark = _isDark;
     _lastTitle = widget.buttonLabel;
